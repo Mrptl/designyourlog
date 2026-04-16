@@ -1,45 +1,36 @@
 import React, { useState } from 'react';
 import useStore from '../store/useStore';
-import { Save, Download, FolderOpen, Loader2, Undo2, Redo2, LogOut, User, ExternalLink, FileText, Shapes } from 'lucide-react';
-import axios from 'axios';
+import { Save, FolderOpen, Loader2, Undo2, Redo2, LogOut, User, ExternalLink, FileText, Shapes, Trash2 } from 'lucide-react';
+import { supabase } from '../supabase';
 
 const Header = () => {
-  const { components, currentDesignId, setCurrentDesign, setDesigns, undo, redo, history, future, user, token, logout } = useStore();
+  const { components, currentDesignId, setCurrentDesign, undo, redo, history, future, user, logout } = useStore();
   const [loading, setLoading] = useState(false);
-
-  // Helper for authorized requests
-  const api = axios.create({
-    baseURL: 'http://localhost:3001/api',
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  // Handle unauthorized/expired token
-  api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        logout();
-      }
-      return Promise.reject(error);
-    }
-  );
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [designs, setDesignsLocal] = useState([]);
 
   const handleSave = async () => {
     if (components.length === 0) return alert('Add components before saving.');
     
+    const designName = prompt('Enter a name for your design:', currentDesignId ? '' : `Design ${new Date().toLocaleDateString()}`);
+    if (designName === null) return; // Cancelled
+
     setLoading(true);
     try {
       const designData = {
-        name: `Design ${new Date().toLocaleDateString()}`,
-        structure_data: components
+        name: designName || `Design ${new Date().toLocaleDateString()}`,
+        structure_data: components,
+        user_id: user.id
       };
 
       if (currentDesignId) {
-        await api.put(`/designs/${currentDesignId}`, designData);
+        const { error } = await supabase.from('designs').update(designData).eq('id', currentDesignId);
+        if (error) throw error;
         alert('Design updated successfully!');
       } else {
-        const res = await api.post('/designs', designData);
-        setCurrentDesign(res.data.data.id, components);
+        const { data, error } = await supabase.from('designs').insert(designData).select().single();
+        if (error) throw error;
+        setCurrentDesign(data.id, components);
         alert('Design saved successfully!');
       }
     } catch (err) {
@@ -53,24 +44,78 @@ const Header = () => {
   const handleLoad = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/designs');
-      const latest = res.data.data[0];
-      if (latest) {
-        useStore.getState().saveState();
-        setCurrentDesign(latest.id, latest.structure_data);
-      } else {
-        alert('No saved designs found.');
-      }
+      const { data, error } = await supabase.from('designs').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      setDesignsLocal(data || []);
+      setShowLoadModal(true);
     } catch (err) {
       console.error(err);
-      alert('Failed to load designs');
+      alert('Failed to fetch designs');
     } finally {
       setLoading(false);
     }
   };
 
+  const selectDesign = (design) => {
+    useStore.getState().saveState();
+    setCurrentDesign(design.id, design.structure_data);
+    setShowLoadModal(false);
+  };
+
+  const deleteDesign = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this design? This action cannot be undone.')) return;
+
+    try {
+      const { error } = await supabase.from('designs').delete().eq('id', id);
+      if (error) throw error;
+      setDesignsLocal(designs.filter(d => d.id !== id));
+      if (currentDesignId === id) {
+        setCurrentDesign(null, []);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete design');
+    }
+  };
+
   return (
     <div className="header glass">
+      {showLoadModal && (
+        <div className="modal-overlay" onClick={() => setShowLoadModal(false)}>
+          <div className="modal-content glass" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 className="panel-header" style={{ border: 'none', margin: 0 }}>Open Design</h2>
+              <button className="btn" onClick={() => setShowLoadModal(false)} style={{ padding: '0.4rem' }}>
+                <Undo2 size={16} /> 
+              </button>
+            </div>
+            
+            <div className="design-list thin-scrollbar">
+              {designs.length === 0 ? (
+                <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                  No saved designs found.
+                </p>
+              ) : (
+                designs.map(design => (
+                  <div key={design.id} className="design-item" onClick={() => selectDesign(design)}>
+                    <div className="design-info">
+                      <h4>{design.name || 'Untitled Design'}</h4>
+                      <p>{new Date(design.created_at).toLocaleString()}</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn" onClick={(e) => deleteDesign(e, design.id)} style={{ padding: '0.4rem', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.2)' }}>
+                        <Trash2 size={16} />
+                      </button>
+                      <FolderOpen size={18} color="var(--accent-color)" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <button className="btn" onClick={undo} disabled={history.length === 0} title="Undo">
         <Undo2 size={16} />
       </button>
@@ -108,7 +153,7 @@ const Header = () => {
       {user && (
         <div className="user-tag">
           <User size={16} />
-          <span className="username">{user.username}</span>
+          <span className="username">{user.user_metadata?.username || user.email.split('@')[0]}</span>
           <button className="btn" onClick={logout} title="Logout" style={{ padding: '0.4rem', borderRadius: '50%', background: 'transparent', border: 'none' }}>
             <LogOut size={16} color="#f87171" />
           </button>

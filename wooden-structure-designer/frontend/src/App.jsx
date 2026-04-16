@@ -11,12 +11,18 @@ import Preview from './Preview';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const token = useStore(state => state.token);
-  if (!token) return <Navigate to="/login" replace />;
+  const session = useStore(state => state.session);
+  if (!session) return <Navigate to="/login" replace />;
   return children;
 };
 
 function App() {
+  const initAuth = useStore(state => state.initAuth);
+
+  React.useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
   return (
     <Router>
       <Routes>

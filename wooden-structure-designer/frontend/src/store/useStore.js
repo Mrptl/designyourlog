@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+import { supabase } from '../supabase';
 
 const useStore = create((set, get) => ({
   components: [],
@@ -11,8 +11,18 @@ const useStore = create((set, get) => ({
   showLabels: true,
   
   // Auth State
-  user: JSON.parse(localStorage.getItem('user')) || null,
-  token: localStorage.getItem('token') || null,
+  user: null,
+  session: null,
+
+  // Initialize session
+  initAuth: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    set({ session, user: session?.user || null });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      set({ session, user: session?.user || null });
+    });
+  },
 
   // History
   history: [],
@@ -56,35 +66,25 @@ const useStore = create((set, get) => ({
   
   // Auth Actions
   login: async (email, password) => {
-    try {
-      const res = await axios.post('http://localhost:3001/api/auth/login', { email, password });
-      const { user, token } = res.data;
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      set({ user, token });
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data?.error || 'Login failed' };
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
   signup: async (username, email, password) => {
-    try {
-      const res = await axios.post('http://localhost:3001/api/auth/signup', { username, email, password });
-      const { user, token } = res.data;
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('token', token);
-      set({ user, token });
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.response?.data?.error || 'Signup failed' };
-    }
+    // Note: Supabase uses email for login. Handle username in metadata.
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: { data: { username } }
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
-  logout: () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    set({ user: null, token: null, components: [], designs: [], currentDesignId: null });
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, session: null, components: [], designs: [], currentDesignId: null });
   },
 
   // Actions
