@@ -20,7 +20,9 @@ const Signup = () => {
     
     const result = await signup(username, email, password);
     if (result.success) {
-      navigate('/');
+      setError('');
+      alert('Account created! Please check your email for a confirmation link to complete your registration.');
+      navigate('/login');
     } else {
       setError(result.error);
     }
