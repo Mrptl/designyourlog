@@ -13,15 +13,38 @@ const useStore = create((set, get) => ({
   // Auth State
   user: null,
   session: null,
+  isAuthReady: false,
 
   // Initialize session
   initAuth: async () => {
+    // 1. Check current session
     const { data: { session } } = await supabase.auth.getSession();
-    set({ session, user: session?.user || null });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ session, user: session?.user || null });
+    
+    // 2. Load draft from localStorage if it exists
+    const savedDraft = localStorage.getItem('wooden_structure_draft');
+    const components = savedDraft ? JSON.parse(savedDraft) : [];
+    
+    set({ 
+      session, 
+      user: session?.user || null, 
+      isAuthReady: true,
+      components: components.length > 0 ? components : get().components
     });
+
+    // 3. Listen for session changes
+    supabase.auth.onAuthStateChange((_event, session) => {
+      set({ session, user: session?.user || null, isAuthReady: true });
+    });
+
+    // 4. Persistence: Save components to localStorage whenever they change
+    useStore.subscribe(
+      (state) => state.components,
+      (components) => {
+        if (components) {
+          localStorage.setItem('wooden_structure_draft', JSON.stringify(components));
+        }
+      }
+    );
   },
 
   // History
