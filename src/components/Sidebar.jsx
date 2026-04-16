@@ -20,9 +20,9 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="sidebar-left glass" style={{ overflowY: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-        <h2 className="panel-header" style={{ margin: 0, border: 'none' }}>Library</h2>
+    <div className="sidebar-left glass">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
+        <h2 className="panel-header" style={{ margin: 0, padding: 0, border: 'none' }}>Library</h2>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-secondary)' }}>
           <input 
             type="checkbox" 
@@ -33,61 +33,47 @@ const Sidebar = () => {
         </label>
       </div>
       
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-        {libraryItems.map(item => (
-          <div 
-            key={item.type}
-            className="component-card"
-            onClick={() => addComponent(item.type)}
-            title="Click to add to center"
-          >
-            <div style={{ color: 'var(--accent-color)' }}>
-              {item.icon}
+      <div className="sidebar-content thin-scrollbar">
+        <div className="section">
+          {libraryItems.map(item => (
+            <div 
+              key={item.type}
+              className="component-card"
+              onClick={() => addComponent(item.type)}
+            >
+              <div style={{ color: 'var(--accent-color)' }}>{item.icon}</div>
+              <h3>{item.name}</h3>
+              <p>{item.desc}</p>
             </div>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 500 }}>{item.name}</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-              {item.desc}
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <h2 className="panel-header">Ready-Made Templates</h2>
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {templateItems.map(item => (
-          <div 
-            key={item.type}
-            className="component-card"
-            onClick={() => {
-              if (window.confirm(`Loading the ${item.name} template will clear your current scene. Continue?`)) {
-                loadTemplate(item.type);
-              }
-            }}
-            title="Click to load template (replaces scene)"
-          >
-            <div style={{ color: 'var(--accent-color)' }}>
-              {item.icon}
-            </div>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 500 }}>{item.name}</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
-              {item.desc}
-            </p>
-          </div>
-        ))}
-      </div>
-      
-      <div style={{ marginTop: 'auto', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-          Click a component to add it to the scene, then drag it in 3D space to position.
-        </p>
+        <h2 className="panel-header" style={{ marginTop: '1rem', padding: '0.5rem 0' }}>Templates</h2>
         
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.8, textAlign: 'center' }}>
-            © {new Date().getFullYear()} All Copyrights Reserved by <strong>Dev Patel</strong>
+        <div className="section">
+          {templateItems.map(item => (
+            <div 
+              key={item.type}
+              className="component-card"
+              onClick={() => {
+                if (window.confirm(`Loading ${item.name} will clear your current scene.`)) {
+                  loadTemplate(item.type);
+                }
+              }}
+            >
+              <div style={{ color: 'var(--accent-color)' }}>{item.icon}</div>
+              <h3>{item.name}</h3>
+              <p>{item.desc}</p>
+            </div>
+          ))}
+        </div>
+        
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '1rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+            © {new Date().getFullYear()} <strong>Dev Patel</strong>
           </p>
-          <p style={{ fontSize: '0.65rem', color: 'var(--accent-color)', opacity: 0.7, textAlign: 'center', marginTop: '0.25rem' }}>
-            Designed & Developed by <strong>Suchna Tech & Solutions</strong>
+          <p style={{ fontSize: '0.6rem', color: 'var(--accent-color)', opacity: 0.7 }}>
+            Suchna Tech & Solutions
           </p>
         </div>
       </div>

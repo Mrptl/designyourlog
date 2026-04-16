@@ -4,12 +4,12 @@
   font-weight: 400;
 
   color-scheme: dark;
-  --bg-dark: #121214;
-  --bg-panel: rgba(24, 24, 27, 0.7);
-  --bg-panel-solid: #18181b;
+  --bg-dark: #0a0a0b;
+  --bg-panel: rgba(20, 20, 22, 0.85);
+  --bg-panel-solid: #141416;
   --bg-hover: rgba(255, 255, 255, 0.05);
 
-  --accent-color: #3b82f6; /* Beautiful blue */
+  --accent-color: #3b82f6;
   --accent-hover: #2563eb;
   
   --text-primary: #f8fafc;
@@ -26,15 +26,17 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
-  display: flex;
-  min-height: 100vh;
   background-color: var(--bg-dark);
   color: var(--text-primary);
   overflow: hidden;
+  position: fixed; /* Prevent rubber-banding on iOS */
+  width: 100%;
+  height: 100%;
 }
 
 #root {
@@ -44,11 +46,10 @@ body {
   flex-direction: column;
 }
 
-/* Glassmorphism utils */
 .glass {
   background: var(--bg-panel);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
 }
 
@@ -58,63 +59,19 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
 }
 
-/* Layout */
 .app-container {
   display: flex;
   height: 100vh;
   width: 100vw;
   position: relative;
+  overflow: hidden;
 }
 
-.header {
-  position: absolute;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  gap: 1rem;
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-}
-
-.sidebar-left {
-  position: absolute;
-  top: 1rem;
-  bottom: 1rem;
-  left: 1rem;
-  width: 250px;
-  z-index: 10;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.sidebar-right {
-  position: absolute;
-  top: 1rem;
-  bottom: 1rem;
-  right: 1rem;
-  width: 300px;
-  z-index: 10;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
+/* Viewport should always fill background */
 .viewport-container {
   position: absolute;
   top: 0;
@@ -124,422 +81,157 @@ body {
   z-index: 1;
 }
 
-/* UI Elements */
+/* Header - Responsive */
+.header {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  max-width: 95%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.header::-webkit-scrollbar { display: none; }
+
+/* Sidebars - PC mode */
+.sidebar-left, .sidebar-right {
+  position: absolute;
+  top: 5rem;
+  bottom: 1rem;
+  z-index: 90;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-left {
+  left: 1rem;
+  width: 280px;
+}
+
+.sidebar-right {
+  right: 1rem;
+  width: 320px;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* General UI Elements */
 .btn {
   background: var(--bg-hover);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 0.6rem 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   font-weight: 500;
-}
-
-.btn:hover {
-  background: var(--border-color);
+  white-space: nowrap;
 }
 
 .btn-primary {
   background: var(--accent-color);
   border-color: var(--accent-hover);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--accent-hover);
 }
 
 .component-card {
   padding: 1rem;
-  border-radius: 8px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border-color);
-  cursor: grab;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.component-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-color);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.component-card:active {
-  cursor: grabbing;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.input-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-}
-
-.input-field {
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  width: 100%;
-  transition: border-color 0.2s;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: var(--accent-color);
-}
-
-.controls-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: var(--text-secondary);
-  gap: 1rem;
-}
-
-.loader {
-  border: 3px solid var(--bg-hover);
-  border-top: 3px solid var(--accent-color);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.user-tag {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  background: var(--bg-hover);
-  padding: 0.4rem 1rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color);
-}
-
-.user-tag .username {
-  color: var(--accent-color);
-  font-weight: 500;
-}
-
-/* Auth Pages */
-.auth-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: radial-gradient(circle at top left, #1e293b, #000000);
-  z-index: 1000;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 2.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 20px;
-  background: var(--bg-panel);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.auth-header {
-  text-align: center;
-}
-
-.auth-icon {
-  margin-bottom: 1rem;
-  color: var(--accent-color);
-  display: inline-block;
-  background: rgba(59, 130, 246, 0.1);
-  padding: 12px;
   border-radius: 12px;
-}
-
-.auth-header h2 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.auth-header p {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
-.auth-form {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-}
-
-.auth-form .form-group label {
-  display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.auth-error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  padding: 0.75rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  text-align: center;
+/* Input Fields */
+.input-field {
+  background: #000;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 1rem; /* Better for mobile zoom prevention */
 }
 
-.auth-btn {
-  padding: 0.85rem;
-  font-weight: 600;
-  margin-top: 0.5rem;
-}
-
-.auth-footer {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.auth-footer a {
-  color: var(--accent-color);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.auth-footer a:hover {
-  text-decoration: underline;
-}
-
-
-/* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-.modal-content {
-    width: 450px;
-    max-height: 80vh;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.design-list {
-    margin-top: 1rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding-right: 0.5rem;
-}
-
-.design-item {
-    background: var(--bg-hover);
-    padding: 1rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.design-item:hover {
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.design-info h4 {
-    margin: 0;
-    font-size: 0.95rem;
-}
-
-.design-info p {
-    margin: 0.2rem 0 0 0;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-/* Responsive Layout */
-@media (max-width: 1024px) {
-  .sidebar-left {
-    width: 220px;
-  }
-  .sidebar-right {
-    width: 260px;
-  }
-}
-
+/* MOBILE ADAPTATION (Phones) */
 @media (max-width: 768px) {
   .header {
-    width: 95%;
     top: 0.5rem;
-    gap: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    overflow-x: auto;
-    justify-content: flex-start;
+    padding: 0.4rem 0.6rem;
+    gap: 0.4rem;
     border-radius: 12px;
   }
+  
+  .header .btn span { display: none; } /* Show only icons */
 
-  .sidebar-left, .sidebar-right {
-    position: fixed;
-    height: auto;
-    max-height: 40vh;
+  .sidebar-left {
+    top: 4.5rem;
     left: 0.5rem;
     right: 0.5rem;
     width: auto;
-    bottom: 0.5rem;
-    top: auto;
+    bottom: auto;
+    height: 130px;
     flex-direction: row;
     overflow-x: auto;
-    overflow-y: hidden;
-    padding: 1rem;
-    gap: 1rem;
-    align-items: center;
   }
-
-  .sidebar-left {
-    bottom: calc(0.5rem + 150px); /* Stack if needed, but we'll use a better approach */
-    display: none; /* Hide template bar on very small for now or make it a top bar */
+  
+  .sidebar-left .sidebar-content {
+    display: flex;
+    flex-direction: row;
+    padding: 0.5rem;
+    gap: 0.5rem;
   }
+  
+  .sidebar-left .component-card {
+    min-width: 100px;
+    margin-bottom: 0;
+  }
+  
+  .sidebar-left .panel-header, .sidebar-left p, .sidebar-left h3 { display: none; }
 
-  /* Improved Mobile Layout: Bottom Drawer for Controls */
   .sidebar-right {
-    max-height: 250px;
-    flex-direction: column;
-    overflow-y: auto;
+    top: auto;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
-    border-radius: 20px 20px 0 0;
-    border-left: none;
-    border-right: none;
+    height: auto;
+    max-height: 45vh;
+    border-radius: 24px 24px 0 0;
     border-bottom: none;
   }
 
-  .sidebar-left {
-    display: flex;
-    top: 4.5rem; /* Below header */
-    bottom: auto;
-    height: auto;
-    width: 100%;
-    left: 0;
-    right: 0;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    background: rgba(18, 18, 20, 0.8);
-  }
-
-  .modal-content {
-    width: 95% !important;
-    max-height: 90vh;
-  }
-
-  .user-tag .username {
-    display: none; /* Hide username on mobile to save space */
-  }
-}
-
-@media (max-width: 480px) {
-  .btn span {
-    display: none; /* Hide button text if icon is present */
-  }
-  
-  .panel-header {
-    font-size: 0.7rem;
-  }
-
-  .auth-card {
+  .sidebar-right .sidebar-content {
     padding: 1.5rem;
-    width: 90%;
   }
 }
 
-/* Fix for interaction: Allow clicking through UI panels but not their content */
-.sidebar-left, .sidebar-right, .header {
-  pointer-events: auto;
+/* Auth responsive */
+.auth-card {
+  width: 95%;
+  max-width: 400px;
+  padding: 1.5rem;
 }
 
-.app-container {
-  pointer-events: none;
-}
-
-.app-container > * {
-  pointer-events: auto;
-}
+/* Utility for no-pointer areas */
+.app-container { pointer-events: none; }
+.header, .sidebar-left, .sidebar-right, .modal-overlay { pointer-events: auto; }
