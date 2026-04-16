@@ -15,7 +15,19 @@ const Preview = () => {
     const hash = window.location.hash.substring(1);
     if (hash) {
       try {
-        const data = JSON.parse(atob(hash));
+        const rawData = JSON.parse(atob(hash));
+        // Expand shortened keys if they exist, otherwise use as is (backwards compatibility)
+        const data = Array.isArray(rawData) && rawData[0]?.i 
+          ? rawData.map(c => ({
+              id: c.i,
+              type: c.t,
+              position: c.p,
+              rotation: c.r,
+              dimensions: c.d,
+              color: c.c
+            }))
+          : rawData;
+          
         setCurrentDesign(null, data);
         setShareUrl(window.location.href);
         return;
@@ -32,11 +44,19 @@ const Preview = () => {
       
       // Update hash so the URL becomes shareable
       try {
-        const encoded = btoa(JSON.stringify(data));
+        // Compress keys to shorten URL length significantly
+        const compressed = data.map(c => ({
+          i: c.id,
+          t: c.type,
+          p: c.position,
+          r: c.rotation,
+          d: c.dimensions,
+          c: c.color
+        }));
+        
+        const encoded = btoa(JSON.stringify(compressed));
         const newUrl = `${window.location.origin}${window.location.pathname}#${encoded}`;
         setShareUrl(newUrl);
-        // We don't change window.location.hash here to avoid triggering effects, 
-        // but we prepare the shareUrl for the modal.
       } catch(err) {
         setShareUrl(window.location.href);
       }
@@ -58,7 +78,7 @@ const Preview = () => {
             <h2 className="panel-header" style={{ border: 'none', width: '100%' }}>Share Design</h2>
             
             <div style={{ background: 'white', padding: '1rem', borderRadius: '12px', margin: '1.5rem 0' }}>
-              <QRCodeCanvas value={shareUrl} size={200} level="M" />
+              <QRCodeCanvas value={shareUrl} size={240} level="L" />
             </div>
 
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
