@@ -434,3 +434,112 @@ body {
     font-size: 0.75rem;
     color: var(--text-secondary);
 }
+/* Responsive Layout */
+@media (max-width: 1024px) {
+  .sidebar-left {
+    width: 220px;
+  }
+  .sidebar-right {
+    width: 260px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    width: 95%;
+    top: 0.5rem;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    overflow-x: auto;
+    justify-content: flex-start;
+    border-radius: 12px;
+  }
+
+  .sidebar-left, .sidebar-right {
+    position: fixed;
+    height: auto;
+    max-height: 40vh;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    bottom: 0.5rem;
+    top: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1rem;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .sidebar-left {
+    bottom: calc(0.5rem + 150px); /* Stack if needed, but we'll use a better approach */
+    display: none; /* Hide template bar on very small for now or make it a top bar */
+  }
+
+  /* Improved Mobile Layout: Bottom Drawer for Controls */
+  .sidebar-right {
+    max-height: 250px;
+    flex-direction: column;
+    overflow-y: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .sidebar-left {
+    display: flex;
+    top: 4.5rem; /* Below header */
+    bottom: auto;
+    height: auto;
+    width: 100%;
+    left: 0;
+    right: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    background: rgba(18, 18, 20, 0.8);
+  }
+
+  .modal-content {
+    width: 95% !important;
+    max-height: 90vh;
+  }
+
+  .user-tag .username {
+    display: none; /* Hide username on mobile to save space */
+  }
+}
+
+@media (max-width: 480px) {
+  .btn span {
+    display: none; /* Hide button text if icon is present */
+  }
+  
+  .panel-header {
+    font-size: 0.7rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+    width: 90%;
+  }
+}
+
+/* Fix for interaction: Allow clicking through UI panels but not their content */
+.sidebar-left, .sidebar-right, .header {
+  pointer-events: auto;
+}
+
+.app-container {
+  pointer-events: none;
+}
+
+.app-container > * {
+  pointer-events: auto;
+}
