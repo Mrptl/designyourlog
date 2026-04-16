@@ -13,47 +13,29 @@ const Header = () => {
     if (components.length === 0) return alert('Add components before saving.');
     
     const designName = prompt('Enter a name for your design:', currentDesignId ? '' : `Design ${new Date().toLocaleDateString()}`);
-    if (designName === null) return; // Cancelled
+    if (designName === null) return;
 
     setLoading(true);
-    try {
-      const designData = {
-        name: designName || `Design ${new Date().toLocaleDateString()}`,
-        structure_data: components,
-        user_id: user.id
-      };
-
-      if (currentDesignId) {
-        const { error } = await supabase.from('designs').update(designData).eq('id', currentDesignId);
-        if (error) throw error;
-        alert('Design updated successfully!');
-      } else {
-        const { data, error } = await supabase.from('designs').insert(designData).select().single();
-        if (error) throw error;
-        setCurrentDesign(data.id, components);
-        alert('Design saved successfully!');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save design');
-    } finally {
-      setLoading(false);
+    const result = await useStore.getState().saveDesign(designName);
+    
+    if (result.success) {
+      alert('Design saved successfully!');
+    } else {
+      alert(`Failed to save: ${result.error}`);
     }
+    setLoading(false);
   };
 
   const handleLoad = async () => {
     setLoading(true);
-    try {
-      const { data, error } = await supabase.from('designs').select('*').order('updated_at', { ascending: false });
-      if (error) throw error;
-      setDesignsLocal(data || []);
+    const result = await useStore.getState().fetchDesigns();
+    if (result.success) {
+      setDesignsLocal(result.data);
       setShowLoadModal(true);
-    } catch (err) {
-      console.error(err);
+    } else {
       alert('Failed to fetch designs');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const selectDesign = (design) => {
@@ -64,11 +46,12 @@ const Header = () => {
 
   const deleteDesign = async (e, id) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this design? This action cannot be undone.')) return;
+    if (!window.confirm('Are you sure you want to delete this design?')) return;
 
     try {
       const { error } = await supabase.from('designs').delete().eq('id', id);
       if (error) throw error;
+      
       setDesignsLocal(designs.filter(d => d.id !== id));
       if (currentDesignId === id) {
         setCurrentDesign(null, []);

@@ -39,7 +39,7 @@ const Viewport = ({ readOnly = false }) => {
       <Canvas 
         shadows 
         gl={{ preserveDrawingBuffer: true }}
-        camera={{ position: [15, 15, 15], fov: 45 }}
+        camera={{ position: [45, 45, 45], fov: 50 }}
         onPointerMissed={() => !readOnly && selectComponent(null)}
       >
         <Suspense fallback={null}>

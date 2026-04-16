@@ -119,9 +119,62 @@ const useStore = create((set, get) => ({
   
   selectComponent: (id) => set({ selectedComponentId: id }),
   
-  // Database actions placeholder
+  // Database actions
   setDesigns: (designs) => set({ designs }),
-  setCurrentDesign: (id, components) => set({ currentDesignId: id, components, selectedComponentId: null }),
+  setCurrentDesign: (id, components) => set({ 
+    currentDesignId: id, 
+    components: components || [], 
+    selectedComponentId: null 
+  }),
+
+  fetchDesigns: async () => {
+    const { data, error } = await supabase
+      .from('designs')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    
+    if (error) {
+      console.error("Fetch error:", error);
+      return { success: false, error: error.message };
+    }
+    set({ designs: data || [] });
+    return { success: true, data };
+  },
+
+  saveDesign: async (name) => {
+    const { user, components, currentDesignId } = get();
+    if (!user) return { success: false, error: 'User not logged in' };
+    if (!components || components.length === 0) return { success: false, error: 'No components to save' };
+
+    const designData = {
+      name: name || `Design ${new Date().toLocaleDateString()}`,
+      structure_data: components,
+      user_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      if (currentDesignId) {
+        const { error } = await supabase
+          .from('designs')
+          .update(designData)
+          .eq('id', currentDesignId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('designs')
+          .insert(designData)
+          .select()
+          .single();
+        if (error) throw error;
+        set({ currentDesignId: data.id });
+      }
+      return { success: true };
+    } catch (err) {
+      console.error("Save error:", err);
+      return { success: false, error: err.message };
+    }
+  },
   
   loadTemplate: (templateName) => set((state) => {
     const historyEntry = [...state.history, JSON.parse(JSON.stringify(state.components))];
