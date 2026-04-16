@@ -121,7 +121,8 @@ const useStore = create((set, get) => ({
       position: position || [0, 0, 0],
       rotation: [0, 0, 0],
       dimensions: defaultDims,
-      color: '#c2976b'
+      color: '#c2976b',
+      locked: false
     };
     return { 
       history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],

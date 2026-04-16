@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useCursor, DragControls, Html, Edges } from '@react-three/drei';
 import useStore from '../../store/useStore';
 
-const WoodComponent = ({ id, dimensions, position, rotation, color, readOnly = false }) => {
+const WoodComponent = ({ id, dimensions, position, rotation, color, locked = false, readOnly = false }) => {
   const showLabels = useStore(state => state.showLabels);
   const displayUnit = useStore(state => state.displayUnit);
   const selectComponent = useStore(state => state.selectComponent);
@@ -12,7 +12,7 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, readOnly = f
 
   const isSelected = selectedComponentId === id;
   const [hovered, setHovered] = useState(false);
-  useCursor(!readOnly && hovered);
+  useCursor(!readOnly && !locked && hovered);
 
   const safeNum = (val, fallback = 0) => {
     const num = parseFloat(val);
@@ -63,10 +63,14 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, readOnly = f
             borderRadius: '4px', 
             fontSize: '10px',
             pointerEvents: 'none',
-            border: '1px solid #3b82f6',
+            border: isSelected ? '1px solid #3b82f6' : '1px solid transparent',
             transform: 'translate(-50%, -100%)',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
           }}>
+            {locked && <span style={{ color: '#fbbf24' }}>🔒</span>}
             {`${toDisplay(safeDimensions[0])}x${toDisplay(safeDimensions[1])}x${toDisplay(safeDimensions[2])} ${displayUnit}`}
           </div>
         </Html>
@@ -74,7 +78,7 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, readOnly = f
     </mesh>
   );
 
-  if (readOnly) return meshElement;
+  if (readOnly || locked) return meshElement;
 
   return (
     <DragControls
