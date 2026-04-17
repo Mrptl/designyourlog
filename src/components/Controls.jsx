@@ -108,10 +108,10 @@ const Controls = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+        <div className="control-actions">
           <button
             className={`btn ${isAllLocked ? 'btn-primary' : ''}`}
-            style={{ flex: 1 }}
+            style={{ minWidth: 0 }}
             onClick={() => {
               useStore.getState().saveState();
               updateMultiple(selectedComponentIds, { locked: !isAllLocked });
@@ -123,7 +123,7 @@ const Controls = () => {
 
           <button
             className="btn"
-            style={{ flex: 1 }}
+            style={{ minWidth: 0 }}
             onClick={() => isMulti ? duplicateMultiple(selectedComponentIds) : duplicateComponent(firstComp.id)}
           >
             <Copy size={16} />
@@ -131,11 +131,12 @@ const Controls = () => {
           </button>
 
           <button
-            className="btn"
-            style={{ padding: '0.6rem', color: '#ef4444' }}
+            className="btn control-delete-btn"
+            style={{ color: '#ef4444' }}
             onClick={() => isMulti ? removeMultiple(selectedComponentIds) : removeComponent(firstComp.id)}
           >
             <Trash2 size={16} />
+            {isMulti ? 'Delete All' : 'Delete'}
           </button>
         </div>
       </div>
