@@ -4,7 +4,7 @@ import { supabase } from '../supabase';
 
 const useStore = create((set, get) => ({
   components: [],
-  selectedComponentId: null,
+  selectedComponentIds: [],
   designs: [],
   currentDesignId: null,
   displayUnit: 'inch', // 'inch' or 'mm'
@@ -28,7 +28,8 @@ const useStore = create((set, get) => ({
       session, 
       user: session?.user || null, 
       isAuthReady: true,
-      components: components.length > 0 ? components : get().components
+      components: components.length > 0 ? components : get().components,
+      selectedComponentIds: []
     });
 
     // 3. Listen for session changes
@@ -71,7 +72,7 @@ const useStore = create((set, get) => ({
       components: previous,
       history: newHistory,
       future: [JSON.parse(JSON.stringify(state.components)), ...state.future],
-      selectedComponentId: null
+      selectedComponentIds: []
     };
   }),
 
@@ -83,7 +84,7 @@ const useStore = create((set, get) => ({
       components: next,
       history: [...state.history, JSON.parse(JSON.stringify(state.components))],
       future: newFuture,
-      selectedComponentId: null
+      selectedComponentIds: []
     };
   }),
   
@@ -107,7 +108,7 @@ const useStore = create((set, get) => ({
 
   logout: async () => {
     await supabase.auth.signOut();
-    set({ user: null, session: null, components: [], designs: [], currentDesignId: null });
+    set({ user: null, session: null, components: [], designs: [], currentDesignId: null, selectedComponentIds: [] });
   },
 
   // Actions
@@ -127,21 +128,82 @@ const useStore = create((set, get) => ({
     return { 
       history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
       components: [...state.components, newComponent], 
-      selectedComponentId: newComponent.id 
+      selectedComponentIds: [newComponent.id] 
     };
   }),
   
   updateComponent: (id, updates) => set((state) => ({
     components: state.components.map(c => c.id === id ? { ...c, ...updates } : c)
   })),
+
+  updateMultiple: (ids, updates) => set((state) => ({
+    components: state.components.map(c => ids.includes(c.id) ? { ...c, ...updates } : c)
+  })),
   
   removeComponent: (id) => set((state) => ({
     history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
     components: state.components.filter(c => c.id !== id),
-    selectedComponentId: state.selectedComponentId === id ? null : state.selectedComponentId
+    selectedComponentIds: state.selectedComponentIds.filter(sid => sid !== id)
+  })),
+
+  removeMultiple: (ids) => set((state) => ({
+    history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
+    components: state.components.filter(c => !ids.includes(c.id)),
+    selectedComponentIds: []
   })),
   
-  selectComponent: (id) => set({ selectedComponentId: id }),
+  duplicateMultiple: (ids) => set((state) => {
+    const originals = state.components.filter(c => ids.includes(c.id));
+    if (originals.length === 0) return state;
+    
+    const newComponents = originals.map(original => ({
+      ...JSON.parse(JSON.stringify(original)),
+      id: uuidv4(),
+      position: [original.position[0] + 5, original.position[1], original.position[2] + 5],
+      locked: false 
+    }));
+    
+    return { 
+      history: [...state.history, JSON.parse(JSON.stringify(state.components))], 
+      future: [],
+      components: [...state.components, ...newComponents], 
+      selectedComponentIds: newComponents.map(nc => nc.id)
+    };
+  }),
+  
+  duplicateComponent: (id) => set((state) => {
+    const original = state.components.find(c => c.id === id);
+    if (!original) return state;
+    
+    const newComponent = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: uuidv4(),
+      position: [original.position[0] + 5, original.position[1], original.position[2] + 5], // Offset by 5 on X and Z
+      locked: false 
+    };
+    
+    return { 
+      history: [...state.history, JSON.parse(JSON.stringify(state.components))], 
+      future: [],
+      components: [...state.components, newComponent], 
+      selectedComponentIds: [newComponent.id] 
+    };
+  }),
+
+  selectComponent: (id, isMultiSelect) => set((state) => {
+    if (!id) return { selectedComponentIds: [] };
+    
+    if (isMultiSelect) {
+      const alreadySelected = state.selectedComponentIds.includes(id);
+      return {
+        selectedComponentIds: alreadySelected 
+          ? state.selectedComponentIds.filter(sid => sid !== id)
+          : [...state.selectedComponentIds, id]
+      };
+    }
+    
+    return { selectedComponentIds: [id] };
+  }),
   
   // Database actions
   setDesigns: (designs) => set({ designs }),

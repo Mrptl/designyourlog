@@ -6,11 +6,11 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, locked = fal
   const showLabels = useStore(state => state.showLabels);
   const displayUnit = useStore(state => state.displayUnit);
   const selectComponent = useStore(state => state.selectComponent);
-  const selectedComponentId = useStore(state => state.selectedComponentId);
+  const selectedComponentIds = useStore(state => state.selectedComponentIds);
   const updateComponent = useStore(state => state.updateComponent);
   const meshRef = useRef();
 
-  const isSelected = selectedComponentId === id;
+  const isSelected = selectedComponentIds.includes(id);
   const [hovered, setHovered] = useState(false);
   useCursor(!readOnly && !locked && hovered);
 
@@ -36,7 +36,7 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, locked = fal
       onClick={(e) => {
         if (readOnly) return;
         e.stopPropagation();
-        selectComponent(id);
+        selectComponent(id, e.shiftKey);
       }}
       onPointerOver={(e) => {
         if (readOnly) return;

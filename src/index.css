@@ -163,13 +163,25 @@ body {
 }
 
 /* Input Fields */
+/* Hide number input arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .input-field {
   background: #000;
   border: 1px solid var(--border-color);
   color: #fff;
-  padding: 0.6rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 6px;
-  font-size: 1rem; /* Better for mobile zoom prevention */
+  font-size: 0.85rem;
+  width: 100%;
+  min-width: 0;
 }
 
 /* MOBILE ADAPTATION (Phones) */
