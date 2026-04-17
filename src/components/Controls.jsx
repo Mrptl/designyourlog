@@ -4,7 +4,7 @@ import { SlidersHorizontal, Trash2, Lock, Unlock, Copy } from 'lucide-react';
 
 const Controls = () => {
   const { components, selectedComponentIds, updateComponent, updateMultiple, removeComponent, removeMultiple, duplicateComponent, duplicateMultiple, displayUnit, setDisplayUnit } = useStore();
-  
+
   if (selectedComponentIds.length === 0) {
     return (
       <div className="sidebar-right glass">
@@ -22,18 +22,19 @@ const Controls = () => {
   const selectedComponents = components.filter(c => selectedComponentIds.includes(c.id));
   const isMulti = selectedComponents.length > 1;
   const firstComp = selectedComponents[0];
+  const formatTypeLabel = (type) => type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
   const toDisplay = (val) => displayUnit === 'mm' ? (val * 25.4).toFixed(1) : val.toString();
   const fromDisplay = (val) => displayUnit === 'mm' ? (parseFloat(val) || 0) / 25.4 : parseFloat(val) || 0;
 
   const handleChange = (field, index, value, convertUnit = true) => {
     const numValue = convertUnit ? fromDisplay(value) : (parseFloat(value) || 0);
-    
+
     if (isMulti) {
       // Bulk update only unlocked components in the selection
       const idsToUpdate = selectedComponents.filter(c => !c.locked).map(c => c.id);
       if (idsToUpdate.length === 0) return;
-      
+
       // For arrays (dimensions, position, rotation)
       const updates = {};
       selectedComponents.forEach(comp => {
@@ -57,19 +58,19 @@ const Controls = () => {
     <div className="sidebar-right glass">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)' }}>
         <h2 className="panel-header" style={{ margin: 0, padding: 0, border: 'none' }}>
-          {isMulti ? `${selectedComponents.length} Selected` : `Edit ${firstComp.type}`}
+          {isMulti ? `${selectedComponents.length} Selected` : `Edit ${formatTypeLabel(firstComp.type)}`}
         </h2>
-        
+
         <div style={{ display: 'flex', gap: '0.3rem', background: 'var(--bg-dark)', borderRadius: '6px', padding: '0.2rem' }}>
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', border: 'none', background: displayUnit === 'inch' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', color: displayUnit === 'inch' ? 'var(--accent-color)' : 'var(--text-secondary)' }}
             onClick={() => setDisplayUnit('inch')}
           >
             inch
           </button>
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', border: 'none', background: displayUnit === 'mm' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', color: displayUnit === 'mm' ? 'var(--accent-color)' : 'var(--text-secondary)' }}
             onClick={() => setDisplayUnit('mm')}
           >
@@ -77,7 +78,7 @@ const Controls = () => {
           </button>
         </div>
       </div>
-      
+
       <div className="sidebar-content thin-scrollbar">
         <div className="form-group" style={{ opacity: isAllLocked ? 0.5 : 1, marginBottom: '0.75rem' }}>
           <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Dimensions [{displayUnit}]</label>
@@ -106,34 +107,33 @@ const Controls = () => {
             <input type="number" step="15" className="input-field" disabled={isAllLocked} value={firstComp.rotation[2]} onChange={e => handleChange('rotation', 2, e.target.value, false)} onFocus={() => useStore.getState().saveState()} />
           </div>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-          <button 
+          <button
             className={`btn ${isAllLocked ? 'btn-primary' : ''}`}
             style={{ flex: 1 }}
             onClick={() => {
               useStore.getState().saveState();
-              selectedComponentIds.forEach(id => updateComponent(id, { locked: !isAllLocked }));
+              updateMultiple(selectedComponentIds, { locked: !isAllLocked });
             }}
           >
             {isAllLocked ? <Lock size={16} /> : <Unlock size={16} />}
             {isAllLocked ? 'Unlock All' : 'Lock All'}
           </button>
 
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             style={{ flex: 1 }}
             onClick={() => isMulti ? duplicateMultiple(selectedComponentIds) : duplicateComponent(firstComp.id)}
           >
             <Copy size={16} />
             {isMulti ? 'Dup All' : 'Duplicate'}
           </button>
-          
-          <button 
-            className="btn" 
+
+          <button
+            className="btn"
             style={{ padding: '0.6rem', color: '#ef4444' }}
             onClick={() => isMulti ? removeMultiple(selectedComponentIds) : removeComponent(firstComp.id)}
-            disabled={isAllLocked}
           >
             <Trash2 size={16} />
           </button>

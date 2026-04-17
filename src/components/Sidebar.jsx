@@ -10,7 +10,9 @@ const Sidebar = () => {
 
   const libraryItems = [
     { type: 'plank', name: 'Wooden Plank', icon: <Columns size={32} strokeWidth={1.5} />, desc: 'Standard structural piece' },
-    { type: 'block', name: 'Support Block', icon: <Box size={32} strokeWidth={1.5} />, desc: 'Base support blocks' }
+    { type: 'block', name: 'Support Block', icon: <Box size={32} strokeWidth={1.5} />, desc: 'Base support blocks' },
+    { type: 'vertical-block', name: 'Vertical Block', icon: <Box size={32} strokeWidth={1.5} />, desc: 'Tall upright support block' },
+    { type: 'horizontal-block', name: 'Horizontal Block', icon: <Box size={32} strokeWidth={1.5} />, desc: 'Wide low-profile support block' }
   ];
 
   const templateItems = [

@@ -12,6 +12,7 @@ const ExportManager = () => {
   const clearExportTrigger = useStore(state => state.clearExportTrigger);
   const components = useStore(state => state.components);
   const displayUnit = useStore(state => state.displayUnit);
+  const formatTypeLabel = (type) => type.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
   useEffect(() => {
     if (!exportTrigger) return;
@@ -117,7 +118,7 @@ const ExportManager = () => {
 
     const tableData = components.map((c, i) => [
       i + 1,
-      c.type.charAt(0).toUpperCase() + c.type.slice(1),
+      formatTypeLabel(c.type),
       `${toDisplay(c.dimensions[0])} x ${toDisplay(c.dimensions[1])} x ${toDisplay(c.dimensions[2])}`,
       `[${c.position.map(p => p.toFixed(1)).join(', ')}]`,
       c.color

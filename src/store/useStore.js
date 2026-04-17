@@ -9,7 +9,7 @@ const useStore = create((set, get) => ({
   currentDesignId: null,
   displayUnit: 'inch', // 'inch' or 'mm'
   showLabels: true,
-  
+
   // Auth State
   user: null,
   session: null,
@@ -19,14 +19,14 @@ const useStore = create((set, get) => ({
   initAuth: async () => {
     // 1. Check current session
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     // 2. Load draft from localStorage if it exists
     const savedDraft = localStorage.getItem('wooden_structure_draft');
     const components = savedDraft ? JSON.parse(savedDraft) : [];
-    
-    set({ 
-      session, 
-      user: session?.user || null, 
+
+    set({
+      session,
+      user: session?.user || null,
       isAuthReady: true,
       components: components.length > 0 ? components : get().components,
       selectedComponentIds: []
@@ -87,7 +87,7 @@ const useStore = create((set, get) => ({
       selectedComponentIds: []
     };
   }),
-  
+
   // Auth Actions
   login: async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -97,8 +97,8 @@ const useStore = create((set, get) => ({
 
   signup: async (username, email, password) => {
     // Note: Supabase uses email for login. Handle username in metadata.
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
+    const { data, error } = await supabase.auth.signUp({
+      email,
       password,
       options: { data: { username } }
     });
@@ -115,7 +115,13 @@ const useStore = create((set, get) => ({
   setShowLabels: (show) => set({ showLabels: show }),
   setDisplayUnit: (unit) => set({ displayUnit: unit }),
   addComponent: (type, position) => set((state) => {
-    const defaultDims = type === 'plank' ? [10, 1, 2] : [2, 2, 2];
+    const defaultDimensions = {
+      plank: [10, 1, 2],
+      block: [2, 2, 2],
+      'vertical-block': [2, 8, 2],
+      'horizontal-block': [8, 2, 2]
+    };
+    const defaultDims = defaultDimensions[type] || defaultDimensions.block;
     const newComponent = {
       id: uuidv4(),
       type,
@@ -125,13 +131,13 @@ const useStore = create((set, get) => ({
       color: '#c2976b',
       locked: false
     };
-    return { 
+    return {
       history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
-      components: [...state.components, newComponent], 
-      selectedComponentIds: [newComponent.id] 
+      components: [...state.components, newComponent],
+      selectedComponentIds: [newComponent.id]
     };
   }),
-  
+
   updateComponent: (id, updates) => set((state) => ({
     components: state.components.map(c => c.id === id ? { ...c, ...updates } : c)
   })),
@@ -139,11 +145,11 @@ const useStore = create((set, get) => ({
   updateMultiple: (ids, updates) => set((state) => ({
     components: state.components.map(c => ids.includes(c.id) ? { ...c, ...updates } : c)
   })),
-  
+
   removeComponent: (id) => set((state) => ({
     history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
     components: state.components.filter(c => c.id !== id),
-    selectedComponentIds: state.selectedComponentIds.filter(sid => sid !== id)
+    selectedComponentIds: state.selectedComponentIds.filter(selectedId => selectedId !== id)
   })),
 
   removeMultiple: (ids) => set((state) => ({
@@ -151,66 +157,66 @@ const useStore = create((set, get) => ({
     components: state.components.filter(c => !ids.includes(c.id)),
     selectedComponentIds: []
   })),
-  
+
   duplicateMultiple: (ids) => set((state) => {
     const originals = state.components.filter(c => ids.includes(c.id));
     if (originals.length === 0) return state;
-    
+
     const newComponents = originals.map(original => ({
       ...JSON.parse(JSON.stringify(original)),
       id: uuidv4(),
       position: [original.position[0] + 5, original.position[1], original.position[2] + 5],
-      locked: false 
+      locked: false
     }));
-    
-    return { 
-      history: [...state.history, JSON.parse(JSON.stringify(state.components))], 
+
+    return {
+      history: [...state.history, JSON.parse(JSON.stringify(state.components))],
       future: [],
-      components: [...state.components, ...newComponents], 
+      components: [...state.components, ...newComponents],
       selectedComponentIds: newComponents.map(nc => nc.id)
     };
   }),
-  
+
   duplicateComponent: (id) => set((state) => {
     const original = state.components.find(c => c.id === id);
     if (!original) return state;
-    
+
     const newComponent = {
       ...JSON.parse(JSON.stringify(original)),
       id: uuidv4(),
       position: [original.position[0] + 5, original.position[1], original.position[2] + 5], // Offset by 5 on X and Z
-      locked: false 
+      locked: false
     };
-    
-    return { 
-      history: [...state.history, JSON.parse(JSON.stringify(state.components))], 
+
+    return {
+      history: [...state.history, JSON.parse(JSON.stringify(state.components))],
       future: [],
-      components: [...state.components, newComponent], 
-      selectedComponentIds: [newComponent.id] 
+      components: [...state.components, newComponent],
+      selectedComponentIds: [newComponent.id]
     };
   }),
 
   selectComponent: (id, isMultiSelect) => set((state) => {
     if (!id) return { selectedComponentIds: [] };
-    
+
     if (isMultiSelect) {
       const alreadySelected = state.selectedComponentIds.includes(id);
       return {
-        selectedComponentIds: alreadySelected 
+        selectedComponentIds: alreadySelected
           ? state.selectedComponentIds.filter(sid => sid !== id)
           : [...state.selectedComponentIds, id]
       };
     }
-    
+
     return { selectedComponentIds: [id] };
   }),
-  
+
   // Database actions
   setDesigns: (designs) => set({ designs }),
-  setCurrentDesign: (id, components) => set({ 
-    currentDesignId: id, 
-    components: components || [], 
-    selectedComponentId: null 
+  setCurrentDesign: (id, components) => set({
+    currentDesignId: id,
+    components: components || [],
+    selectedComponentIds: []
   }),
 
   fetchDesigns: async () => {
@@ -218,7 +224,7 @@ const useStore = create((set, get) => ({
       .from('designs')
       .select('*')
       .order('updated_at', { ascending: false });
-    
+
     if (error) {
       console.error("Fetch error:", error);
       return { success: false, error: error.message };
@@ -261,7 +267,7 @@ const useStore = create((set, get) => ({
       return { success: false, error: err.message };
     }
   },
-  
+
   loadTemplate: (templateName) => set((state) => {
     const historyEntry = [...state.history, JSON.parse(JSON.stringify(state.components))];
     let newComponents = [];
@@ -270,49 +276,48 @@ const useStore = create((set, get) => ({
       const c = '#c2976b';
       newComponents = [
         // 3 Bottom Stringers (48x1x4)
-        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, -18], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, 0], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, 18], rotation: [0,0,0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, -18], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, 0], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [48, 4, 1], position: [0, 2, 18], rotation: [0, 0, 0], color: c },
         // Top deck boards (40x1x4) across the stringers
-        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [-22, 4.5, 0], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [-11, 4.5, 0], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [0, 4.5, 0], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [11, 4.5, 0], rotation: [0,0,0], color: c },
-        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [22, 4.5, 0], rotation: [0,0,0], color: c }
+        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [-22, 4.5, 0], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [-11, 4.5, 0], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [0, 4.5, 0], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [11, 4.5, 0], rotation: [0, 0, 0], color: c },
+        { id: uuidv4(), type: 'plank', dimensions: [4, 1, 40], position: [22, 4.5, 0], rotation: [0, 0, 0], color: c }
       ];
     } else if (templateName === 'box') {
       const c = '#d1a87b';
-      const w=20, h=20, d=20, t=1;
+      const w = 20, h = 20, d = 20, t = 1;
       newComponents = [
-        { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t/2, 0], rotation: [0,0,0], color: c }, // Bottom
-        { id: uuidv4(), type: 'plank', dimensions: [w, h, t], position: [0, h/2, -d/2+t/2], rotation: [0,0,0], color: c }, // Back
-        { id: uuidv4(), type: 'plank', dimensions: [w, h, t], position: [0, h/2, d/2-t/2], rotation: [0,0,0], color: c }, // Front
-        { id: uuidv4(), type: 'plank', dimensions: [t, h, d-t*2], position: [-w/2+t/2, h/2, 0], rotation: [0,0,0], color: c }, // Left
-        { id: uuidv4(), type: 'plank', dimensions: [t, h, d-t*2], position: [w/2-t/2, h/2, 0], rotation: [0,0,0], color: c } // Right
+        { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t / 2, 0], rotation: [0, 0, 0], color: c }, // Bottom
+        { id: uuidv4(), type: 'plank', dimensions: [w, h, t], position: [0, h / 2, -d / 2 + t / 2], rotation: [0, 0, 0], color: c }, // Back
+        { id: uuidv4(), type: 'plank', dimensions: [w, h, t], position: [0, h / 2, d / 2 - t / 2], rotation: [0, 0, 0], color: c }, // Front
+        { id: uuidv4(), type: 'plank', dimensions: [t, h, d - t * 2], position: [-w / 2 + t / 2, h / 2, 0], rotation: [0, 0, 0], color: c }, // Left
+        { id: uuidv4(), type: 'plank', dimensions: [t, h, d - t * 2], position: [w / 2 - t / 2, h / 2, 0], rotation: [0, 0, 0], color: c } // Right
       ];
     } else if (templateName === 'crate') {
       const c = '#cba37b';
-      const w=30, h=24, d=20, t=0.5;
+      const w = 30, h = 24, d = 20, t = 0.5;
       newComponents = [
-        { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t/2, 0], rotation: [0,0,0], color: c }, // Bottom Base
+        { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t / 2, 0], rotation: [0, 0, 0], color: c }, // Bottom Base
         // Sides made of slats
-        ...[0,1,2,3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [w, 3, t], position: [0, 3 + i*6, -d/2+t/2], rotation: [0,0,0], color: c })), // Back Slats
-        ...[0,1,2,3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [w, 3, t], position: [0, 3 + i*6, d/2-t/2], rotation: [0,0,0], color: c })), // Front Slats
-        ...[0,1,2,3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [t, 3, d-t*2], position: [-w/2+t/2, 3 + i*6, 0], rotation: [0,0,0], color: c })), // Left Slats
-        ...[0,1,2,3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [t, 3, d-t*2], position: [w/2-t/2, 3 + i*6, 0], rotation: [0,0,0], color: c })) // Right Slats
+        ...[0, 1, 2, 3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [w, 3, t], position: [0, 3 + i * 6, -d / 2 + t / 2], rotation: [0, 0, 0], color: c })), // Back Slats
+        ...[0, 1, 2, 3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [w, 3, t], position: [0, 3 + i * 6, d / 2 - t / 2], rotation: [0, 0, 0], color: c })), // Front Slats
+        ...[0, 1, 2, 3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [t, 3, d - t * 2], position: [-w / 2 + t / 2, 3 + i * 6, 0], rotation: [0, 0, 0], color: c })), // Left Slats
+        ...[0, 1, 2, 3].map(i => ({ id: uuidv4(), type: 'plank', dimensions: [t, 3, d - t * 2], position: [w / 2 - t / 2, 3 + i * 6, 0], rotation: [0, 0, 0], color: c })) // Right Slats
       ];
     }
-    return { 
+    return {
       history: historyEntry, future: [],
-      components: newComponents, selectedComponentId: null, currentDesignId: null 
+      components: newComponents, selectedComponentIds: [], currentDesignId: null
     };
   }),
-  
-  clearScene: () => set((state) => ({ 
+
+  clearScene: () => set((state) => ({
     history: [...state.history, JSON.parse(JSON.stringify(state.components))], future: [],
-    components: [], selectedComponentId: null 
+    components: [], selectedComponentIds: []
   }))
 }));
 
 export default useStore;
-
