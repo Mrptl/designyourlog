@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useCursor, DragControls, Html, Edges } from '@react-three/drei';
 import { Vector3 } from 'three';
 import useStore from '../../store/useStore';
@@ -8,39 +8,58 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, locked = fal
   const displayUnit = useStore(state => state.displayUnit);
   const selectComponent = useStore(state => state.selectComponent);
   const selectedComponentIds = useStore(state => state.selectedComponentIds);
-  const updateComponent = useStore(state => state.updateComponent);
+  // const updateComponent = useStore(state => state.updateComponent);
+
   const objectRef = useRef();
 
   const isSelected = selectedComponentIds.includes(id);
   const [hovered, setHovered] = useState(false);
-  useCursor(!readOnly && !locked && hovered);
+  useCursor(hovered && !readOnly && !locked);
 
   const safeNum = (val, fallback = 0) => {
-    const num = parseFloat(val);
+    const num = Number(val);
     return Number.isNaN(num) ? fallback : num;
   };
 
+
   const safeDimensions = [safeNum(dimensions[0], 1), safeNum(dimensions[1], 1), safeNum(dimensions[2], 1)];
-  const safePosition = [safeNum(position?.[0], 0), safeNum(position?.[1], 0), safeNum(position?.[2], 0)];
+  const safePosition = [safeNum(position[0], 0), safeNum(position[1], 0), safeNum(position[2], 0)];
   const safeRotation = [
-    safeNum(rotation[0]) * Math.PI / 180,
-    safeNum(rotation[1]) * Math.PI / 180,
-    safeNum(rotation[2]) * Math.PI / 180
+    safeNum(rotation[0], 0) * Math.PI / 180,
+    safeNum(rotation[1], 0) * Math.PI / 180,
+    safeNum(rotation[2], 0) * Math.PI / 180
   ];
+
+  const isDragging = useStore(state => state.isDragging);
+  useEffect(() => {
+    if (!objectRef.current || isDragging) return;
+
+    objectRef.current.position.set(
+      safePosition[0],
+      safePosition[1],
+      safePosition[2]
+    );
+
+    objectRef.current.rotation.set(
+      safeRotation[0],
+      safeRotation[1],
+      safeRotation[2]
+    );
+  }, [position, rotation, isDragging]);
+
 
   const toDisplay = (val) => {
     const num = safeNum(val);
     return displayUnit === 'mm' ? (num * 25.4).toFixed(0) : num.toFixed(1);
   };
 
-  const syncPosition = (localMatrix) => {
-    if (!localMatrix) return;
-    const nextPosition = new Vector3().setFromMatrixPosition(localMatrix);
-    updateComponent(id, { position: [nextPosition.x, nextPosition.y, nextPosition.z] });
-  };
+  // syncPosition removed - handled in Viewport
+
+
 
   const componentElement = (
-    <group ref={objectRef} position={safePosition} rotation={safeRotation}>
+    <group ref={objectRef}>
+
       <mesh
         onClick={(e) => {
           if (readOnly) return;
@@ -48,11 +67,11 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, locked = fal
           selectComponent(id, e.shiftKey);
         }}
         onPointerOver={(e) => {
-          if (readOnly) return;
+          if (readOnly || locked) return;
           e.stopPropagation();
           setHovered(true);
         }}
-        onPointerOut={() => !readOnly && setHovered(false)}
+        onPointerOut={() => setHovered(false)}
         castShadow
         receiveShadow
       >
@@ -92,17 +111,9 @@ const WoodComponent = ({ id, dimensions, position, rotation, color, locked = fal
     </group>
   );
 
-  if (readOnly || locked) return componentElement;
+  return componentElement;
 
-  return (
-    <DragControls
-      onDragStart={() => useStore.getState().saveState()}
-      onDrag={(localMatrix) => syncPosition(localMatrix)}
-      onDragEnd={(localMatrix) => syncPosition(localMatrix)}
-    >
-      {componentElement}
-    </DragControls>
-  );
+
 };
 
 export default WoodComponent;

@@ -7,17 +7,17 @@ import WoodComponent from './objects/WoodComponent';
 
 const Scene = ({ readOnly }) => {
   const components = useStore(state => state.components);
-  const selectedComponentId = useStore(state => state.selectedComponentId);
-  const selectComponent = useStore(state => state.selectComponent);
-  const updateComponent = useStore(state => state.updateComponent);
+  const isDragging = useStore(state => state.isDragging);
+
 
   return (
     <>
       <ExportManager />
-      <OrbitControls makeDefault />
+      <OrbitControls makeDefault enabled={!isDragging} />
+
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
-      
+
       {/* Grid and Environment */}
       <Grid infiniteGrid fadeDistance={50} sectionColor="#444" cellColor="#222" />
       <Environment preset="city" />
@@ -36,8 +36,8 @@ const Viewport = ({ readOnly = false }) => {
 
   return (
     <div className="viewport-container">
-      <Canvas 
-        shadows 
+      <Canvas
+        shadows
         gl={{ preserveDrawingBuffer: true }}
         camera={{ position: [45, 45, 45], fov: 50 }}
         onPointerMissed={() => !readOnly && selectComponent(null)}

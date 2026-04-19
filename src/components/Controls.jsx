@@ -36,7 +36,6 @@ const Controls = () => {
       if (idsToUpdate.length === 0) return;
 
       // For arrays (dimensions, position, rotation)
-      const updates = {};
       selectedComponents.forEach(comp => {
         if (!comp.locked) {
           const newArray = [...comp[field]];
@@ -80,6 +79,19 @@ const Controls = () => {
       </div>
 
       <div className="sidebar-content thin-scrollbar">
+        {isAllLocked && (
+          <div style={{
+            background: 'rgba(251, 191, 36, 0.15)',
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            borderRadius: '6px',
+            padding: '0.75rem',
+            marginBottom: '1rem',
+            textAlign: 'center',
+            color: '#d97706'
+          }}>
+            🔒 All selected components are locked. <strong>Click "Unlock All" below to edit.</strong>
+          </div>
+        )}
         <div className="form-group" style={{ opacity: isAllLocked ? 0.5 : 1, marginBottom: '0.75rem' }}>
           <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Dimensions [{displayUnit}]</label>
           <div className="input-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>

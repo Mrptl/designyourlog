@@ -34,21 +34,25 @@ const useStore = create((set, get) => ({
 
     // 3. Listen for session changes
     supabase.auth.onAuthStateChange((_event, session) => {
-      set({ session, user: session?.user || null, isAuthReady: true });
+      set({ session, user: session?.user || null });
     });
+
+
+
 
     // 4. Persistence: Save components to localStorage whenever they change
     useStore.subscribe(
       (state) => state.components,
       (components) => {
         if (components) {
-          localStorage.setItem('wooden_structure_draft', JSON.stringify(components));
+          localStorage.setItem('wooden_structure_draft', JSON.stringify(components.map(c => useStore.getState().serializeComponents([c])[0])));
         }
       }
     );
   },
 
   // History
+
   history: [],
   future: [],
 
@@ -56,6 +60,9 @@ const useStore = create((set, get) => ({
   exportTrigger: null,
   triggerExport: (type) => set({ exportTrigger: { type, timestamp: Date.now() } }),
   clearExportTrigger: () => set({ exportTrigger: null }),
+
+  isDragging: false,
+  setIsDragging: (dragging) => set({ isDragging: dragging }),
 
   setShowLabels: (show) => set({ showLabels: show }),
   setDisplayUnit: (unit) => set({ displayUnit: unit }),
@@ -90,14 +97,15 @@ const useStore = create((set, get) => ({
 
   // Auth Actions
   login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: _loginData, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { success: false, error: error.message };
     return { success: true };
   },
 
   signup: async (username, email, password) => {
+
     // Note: Supabase uses email for login. Handle username in metadata.
-    const { data, error } = await supabase.auth.signUp({
+    const { data: _signupData, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { username } }
@@ -106,14 +114,23 @@ const useStore = create((set, get) => ({
     return { success: true };
   },
 
+
+
   logout: async () => {
     await supabase.auth.signOut();
     set({ user: null, session: null, components: [], designs: [], currentDesignId: null, selectedComponentIds: [] });
   },
 
+  // Serialize with precision
+  serializeComponents: (components) => components.map(c => ({
+    ...c,
+    position: c.position.map(p => Number(p.toFixed(8))),
+    rotation: c.rotation.map(r => Number(r.toFixed(8))),
+    dimensions: c.dimensions.map(d => Number(d.toFixed(8)))
+  })),
+
   // Actions
-  setShowLabels: (show) => set({ showLabels: show }),
-  setDisplayUnit: (unit) => set({ displayUnit: unit }),
+
   addComponent: (type, position) => set((state) => {
     const defaultDimensions = {
       plank: [10, 1, 2],
@@ -240,10 +257,11 @@ const useStore = create((set, get) => ({
 
     const designData = {
       name: name || `Design ${new Date().toLocaleDateString()}`,
-      structure_data: components,
+      structure_data: get().serializeComponents(components),
       user_id: user.id,
       updated_at: new Date().toISOString()
     };
+
 
     try {
       if (currentDesignId) {
@@ -289,6 +307,7 @@ const useStore = create((set, get) => ({
     } else if (templateName === 'box') {
       const c = '#d1a87b';
       const w = 20, h = 20, d = 20, t = 1;
+
       newComponents = [
         { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t / 2, 0], rotation: [0, 0, 0], color: c }, // Bottom
         { id: uuidv4(), type: 'plank', dimensions: [w, h, t], position: [0, h / 2, -d / 2 + t / 2], rotation: [0, 0, 0], color: c }, // Back
@@ -296,9 +315,11 @@ const useStore = create((set, get) => ({
         { id: uuidv4(), type: 'plank', dimensions: [t, h, d - t * 2], position: [-w / 2 + t / 2, h / 2, 0], rotation: [0, 0, 0], color: c }, // Left
         { id: uuidv4(), type: 'plank', dimensions: [t, h, d - t * 2], position: [w / 2 - t / 2, h / 2, 0], rotation: [0, 0, 0], color: c } // Right
       ];
+
     } else if (templateName === 'crate') {
       const c = '#cba37b';
-      const w = 30, h = 24, d = 20, t = 0.5;
+      const w = 30, _h = 24, d = 20, t = 0.5;
+
       newComponents = [
         { id: uuidv4(), type: 'plank', dimensions: [w, t, d], position: [0, t / 2, 0], rotation: [0, 0, 0], color: c }, // Bottom Base
         // Sides made of slats
