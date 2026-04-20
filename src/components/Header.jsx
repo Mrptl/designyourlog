@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import useStore from '../store/useStore';
-import { Save, FolderOpen, Loader2, Undo2, Redo2, LogOut, User, ExternalLink, FileText, Shapes, Trash2, X } from 'lucide-react';
+import { Save, FolderOpen, Loader2, Undo2, Redo2, LogOut, User, ExternalLink, FileText, Shapes, Trash2, X, Copy, CheckSquare, Layers } from 'lucide-react';
 import { supabase } from '../supabase';
 
 const Header = () => {
@@ -9,6 +9,25 @@ const Header = () => {
   const [loading, setLoading] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
   const [designs, setDesignsLocal] = useState([]);
+  const [selectedDesignIds, setSelectedDesignIds] = useState([]);
+
+
+
+  const handleAssemble = async () => {
+    if (selectedDesignIds.length === 0) {
+      alert('Select designs to assemble');
+      return;
+    }
+
+    const result = await useStore.getState().assembleDesigns(selectedDesignIds);
+    if (result.success) {
+      alert(`Assembled ${result.assembledCount} parts (total: ${result.total})`);
+      setShowLoadModal(false);
+      setSelectedDesignIds([]);
+    } else {
+      alert(`Assemble failed: ${result.error}`);
+    }
+  };
   const structureCountLabel = `${components.length} ${components.length === 1 ? 'part' : 'parts'}`;
   const accountName = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Workspace';
 
@@ -68,19 +87,31 @@ const Header = () => {
   const loadModal = showLoadModal ? createPortal(
     <div className="modal-overlay" onClick={() => setShowLoadModal(false)}>
       <div className="modal-content load-modal glass" onClick={e => e.stopPropagation()}>
-        <div className="load-modal-header">
+        <div className="load-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 className="panel-header" style={{ border: 'none', margin: 0, padding: 0 }}>Open Design</h2>
-            <p className="load-modal-subtitle">Choose a saved design to replace the current canvas.</p>
+            <h2 className="panel-header" style={{ border: 'none', margin: 0, padding: 0 }}>Open & Assemble Designs</h2>
+            <p className="load-modal-subtitle" style={{ margin: 0 }}>Click to load (replace), checkbox + Assemble for multi-merge.</p>
           </div>
-          <button
-            className="btn"
-            onClick={() => setShowLoadModal(false)}
-            style={{ padding: '0.4rem' }}
-            aria-label="Close saved designs"
-          >
-            <X size={16} />
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {selectedDesignIds.length > 0 && (
+              <button
+                className="btn btn-primary"
+                onClick={handleAssemble}
+                style={{ padding: '0.4rem 0.8rem' }}
+              >
+                <Layers size={16} />
+                Assemble ({selectedDesignIds.length})
+              </button>
+            )}
+            <button
+              className="btn"
+              onClick={() => setShowLoadModal(false)}
+              style={{ padding: '0.4rem' }}
+              aria-label="Close saved designs"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         <div className="design-list thin-scrollbar">
@@ -94,8 +125,25 @@ const Header = () => {
               const partCount = Array.isArray(design.structure_data) ? design.structure_data.length : 0;
 
               return (
-                <div key={design.id} className="design-item" onClick={() => selectDesign(design)}>
-                  <div className="design-info">
+                <div key={design.id} className="design-item" style={{ cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedDesignIds.includes(design.id)}
+                      onChange={() => {
+                        if (selectedDesignIds.includes(design.id)) {
+                          setSelectedDesignIds(prev => prev.filter(id => id !== design.id));
+                        } else {
+                          setSelectedDesignIds(prev => [...prev, design.id]);
+                        }
+                      }}
+
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+
+                  </div>
+                  <div className="design-info" onClick={() => selectDesign(design)} style={{ flex: 1 }}>
                     <h4>{design.name || 'Untitled Design'}</h4>
                     <p>Saved {savedAt}</p>
                   </div>
@@ -108,6 +156,23 @@ const Header = () => {
                       aria-label={`Delete ${design.name || 'saved design'}`}
                     >
                       <Trash2 size={16} />
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const result = await useStore.getState().duplicateDesign(design.id);
+                        if (result.success) {
+                          alert('Design duplicated successfully!');
+                          // List auto-refreshes via store
+                        } else {
+                          alert(`Duplicate failed: ${result.error}`);
+                        }
+                      }}
+                      style={{ padding: '0.4rem', color: 'var(--accent-color)' }}
+                      title="Duplicate this design"
+                    >
+                      <Copy size={16} />
                     </button>
                     <FolderOpen size={18} color="var(--accent-color)" />
                   </div>

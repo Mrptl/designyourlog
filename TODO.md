@@ -1,27 +1,20 @@
-# Comprehensive Fix Plan for 3 Bugs
+# Multi Group Move + Nudge Buttons (Approved ✅)
 
-## Bugs
+**Progress:**
 
-1. **Overlap Drag**: Unselected moves when overlapping selected during drag
-2. **Lock Position Shift**: Position changes on lock
-3. **Save/Load Scatter**: Components displace on reload
+1. [✅] useStore.js: nudgeSelected(ids, [dx,dy,dz]) relative offset unlocked selected (add delta to pos).
+2. [✅] Controls.jsx: Multi avg pos display ("Avg"), position inputs relative offset, Nudge grid (Left/Right X, Front/Back Z, Up/Down Y ±1 unit).
+3. [✅] Icons: ArrowLeft/Right/Up/Down, CornerUpLeft/Right (Front/Back).
+4. Tested: Multi drag/nudge maintains relative positions.
 
-## Information Gathered (from files)
+**Usage:** Select multi → see "Avg Pos", input delta (+/-), nudge buttons move group.
 
-- **WoodComponent.jsx**: DragControls per unlocked component → overlap raycast issues. useEffect props→position overrides drag. syncPosition `worldToLocal` wrong.
-- **Viewport.jsx**: No scene ref/group for coordinates.
-- **useStore.js**: serializeComponents good. isDragging exists.
+## Previous
 
-## Plan
+- Drag fix ✅
+- Assemble/disassemble ✅
+- Duplication ✅
 
-1. **Overlap**: Single Viewport-level DragControls filtering selected unlocked objects.
-2. **Lock shift**: Skip useEffect during drag/locked. syncPosition → world position.
-3. **Save/load**: Enhance deserial  (Number).
+## Bugs Pending
 
-## Files
-
-- WoodComponent.jsx (remove DragControls, fix useEffect, syncPosition)
-- Viewport.jsx (add scene ref, DragControls)
-- useStore.js (add sceneRefs map, selectedUnlocked)
-
-## Approved [✅]
+Overlap/Lock/Save scatter (TODO original).

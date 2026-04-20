@@ -1,9 +1,9 @@
 import React from 'react';
 import useStore from '../store/useStore';
-import { SlidersHorizontal, Trash2, Lock, Unlock, Copy } from 'lucide-react';
+import { SlidersHorizontal, Trash2, Lock, Unlock, Copy, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, CornerUpLeft, CornerUpRight } from 'lucide-react';
 
 const Controls = () => {
-  const { components, selectedComponentIds, updateComponent, updateMultiple, removeComponent, removeMultiple, duplicateComponent, duplicateMultiple, displayUnit, setDisplayUnit } = useStore();
+  const { components, selectedComponentIds, updateComponent, updateMultiple, removeComponent, removeMultiple, duplicateComponent, duplicateMultiple, displayUnit, setDisplayUnit, nudgeSelected } = useStore();
 
   if (selectedComponentIds.length === 0) {
     return (
@@ -31,18 +31,22 @@ const Controls = () => {
     const numValue = convertUnit ? fromDisplay(value) : (parseFloat(value) || 0);
 
     if (isMulti) {
-      // Bulk update only unlocked components in the selection
-      const idsToUpdate = selectedComponents.filter(c => !c.locked).map(c => c.id);
-      if (idsToUpdate.length === 0) return;
+      const unlockedIds = selectedComponents.filter(c => !c.locked).map(c => c.id);
+      if (unlockedIds.length === 0) return;
 
-      // For arrays (dimensions, position, rotation)
-      selectedComponents.forEach(comp => {
-        if (!comp.locked) {
-          const newArray = [...comp[field]];
-          newArray[index] = numValue;
-          updateComponent(comp.id, { [field]: newArray });
-        }
-      });
+      if (field === 'position') {
+        // Relative offset for multi position
+        nudgeSelected(numValue, 0, 0);
+      } else {
+        // Absolute for dims/rot
+        selectedComponents.forEach(comp => {
+          if (!comp.locked) {
+            const newArray = [...comp[field]];
+            newArray[index] = numValue;
+            updateComponent(comp.id, { [field]: newArray });
+          }
+        });
+      }
     } else {
       if (firstComp.locked) return;
       const newArray = [...firstComp[field]];
@@ -50,6 +54,21 @@ const Controls = () => {
       updateComponent(firstComp.id, { [field]: newArray });
     }
   };
+
+  const getAveragePosition = () => {
+    const unlockedSelected = selectedComponents.filter(c => !c.locked);
+    if (unlockedSelected.length === 0) return [0, 0, 0];
+    const sumX = unlockedSelected.reduce((sum, c) => sum + c.position[0], 0);
+    const sumY = unlockedSelected.reduce((sum, c) => sum + c.position[1], 0);
+    const sumZ = unlockedSelected.reduce((sum, c) => sum + c.position[2], 0);
+    return [
+      (sumX / unlockedSelected.length),
+      (sumY / unlockedSelected.length),
+      (sumZ / unlockedSelected.length)
+    ];
+  };
+
+  const avgPos = getAveragePosition();
 
   const isAllLocked = selectedComponents.every(c => c.locked);
 
@@ -104,11 +123,11 @@ const Controls = () => {
         <div className="form-group" style={{ opacity: isAllLocked ? 0.5 : 1, marginBottom: '0.75rem' }}>
           <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Position [{displayUnit}]</label>
           <div className="input-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Mixed" : ""} value={isMulti ? "" : toDisplay(firstComp.position[0])} onChange={e => handleChange('position', 0, e.target.value)} onFocus={() => useStore.getState().saveState()} />
-            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Mixed" : ""} value={isMulti ? "" : toDisplay(firstComp.position[1])} onChange={e => handleChange('position', 1, e.target.value)} onFocus={() => useStore.getState().saveState()} />
-            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Mixed" : ""} value={isMulti ? "" : toDisplay(firstComp.position[2])} onChange={e => handleChange('position', 2, e.target.value)} onFocus={() => useStore.getState().saveState()} />
+            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Avg" : ""} value={isMulti ? toDisplay(avgPos[0]) : toDisplay(firstComp.position[0])} onChange={e => handleChange('position', 0, e.target.value)} onFocus={() => useStore.getState().saveState()} />
+            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Avg" : ""} value={isMulti ? toDisplay(avgPos[1]) : toDisplay(firstComp.position[1])} onChange={e => handleChange('position', 1, e.target.value)} onFocus={() => useStore.getState().saveState()} />
+            <input type="number" step="0.5" className="input-field" disabled={isAllLocked} placeholder={isMulti ? "Avg" : ""} value={isMulti ? toDisplay(avgPos[2]) : toDisplay(firstComp.position[2])} onChange={e => handleChange('position', 2, e.target.value)} onFocus={() => useStore.getState().saveState()} />
           </div>
-          {isMulti && <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>* Relative positions are maintained if using drag, entering values sets absolute.</p>}
+          {isMulti && <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>* Avg pos (relative offset for group move)</p>}
         </div>
 
         <div className="form-group" style={{ opacity: isAllLocked ? 0.5 : 1, marginBottom: '0.75rem' }}>
@@ -119,6 +138,40 @@ const Controls = () => {
             <input type="number" step="15" className="input-field" disabled={isAllLocked} value={firstComp.rotation[2]} onChange={e => handleChange('rotation', 2, e.target.value, false)} onFocus={() => useStore.getState().saveState()} />
           </div>
         </div>
+
+        {/* Nudge Buttons for Multi */}
+        {isMulti && (
+          <div className="form-group" style={{ opacity: isAllLocked ? 0.5 : 1, marginBottom: '0.75rem' }}>
+            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>Nudge Group [{displayUnit}]</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(0, fromDisplay(1), 0)} title="Up (+Y)" disabled={isAllLocked}>
+                  <ArrowUp size={12} />
+                </button>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(0, fromDisplay(-1), 0)} title="Down (-Y)" disabled={isAllLocked}>
+                  <ArrowDown size={12} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(fromDisplay(1), 0, 0)} title="Right (+X)" disabled={isAllLocked}>
+                  <ArrowRight size={12} />
+                </button>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(fromDisplay(-1), 0, 0)} title="Left (-X)" disabled={isAllLocked}>
+                  <ArrowLeft size={12} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(0, 0, fromDisplay(1))} title="Back (+Z)" disabled={isAllLocked}>
+                  <CornerUpRight size={12} />
+                </button>
+                <button className="btn" style={{ padding: '0.25rem' }} onClick={() => nudgeSelected(0, 0, fromDisplay(-1))} title="Front (-Z)" disabled={isAllLocked}>
+                  <CornerUpLeft size={12} />
+                </button>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginTop: '0.25rem', textAlign: 'center' }}>±1 {displayUnit}</p>
+          </div>
+        )}
 
         <div className="control-actions">
           <button
